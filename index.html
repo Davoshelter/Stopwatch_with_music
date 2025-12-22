@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Studio - Dark Mode</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; }
+        
+        /* Fondo animado oscuro */
+        .bg-gradient-dark {
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #0f172a);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Caja de cristal brillante */
+        .glow-box {
+            box-shadow: 0 0 40px -10px rgba(124, 58, 237, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(16px);
+            background: rgba(30, 41, 59, 0.8);
+        }
+
+        /* Slider de volumen personalizado */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #a78bfa;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(167, 139, 250, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #475569;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="bg-gradient-dark min-h-screen flex items-center justify-center text-white p-4 relative">
+
+    <audio id="bgMusic" loop preload="auto">
+        <source src="https://drive.google.com/file/d/1hC5V0wJhJtewxnEQJ-yH4Fsxpi32nWA2/view?usp=sharing" type="audio/mpeg">
+    </audio>
+
+    <!-- MODAL DE DESCANSO -->
+    <div id="breakModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm transition-opacity duration-300 hidden opacity-0">
+        <div class="glow-box rounded-3xl w-full max-w-sm p-8 text-center transform transition-all scale-95 duration-300" id="breakContent">
+            <div class="mb-4">
+                <span class="px-4 py-1.5 rounded-full text-xs font-bold tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    TIEMPO DE RECUPERACIÓN
+                </span>
+            </div>
+            <h2 class="text-3xl font-bold text-white mb-2">Descanso</h2>
+            <p class="text-slate-400 text-sm mb-6">Relaja la vista y estira las piernas.</p>
+            
+            <div class="relative py-4">
+                <div id="breakTimerDisplay" class="text-6xl font-bold text-emerald-400 drop-shadow-lg tabular-nums">
+                    10:00
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-center">
+                <button id="skipBreakBtn" class="px-6 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-medium transition-all hover:scale-105 active:scale-95">
+                    Saltar Descanso ⏭
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="glow-box rounded-3xl w-full max-w-md overflow-hidden relative transition-all duration-500 hover:scale-[1.01]">
+        
+        <div class="pt-8 pb-4 text-center px-6">
+            <div class="flex justify-center items-center gap-2 mb-4">
+                <span id="sessionBadge" class="px-4 py-1.5 rounded-full text-xs font-bold tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                    SESIÓN ÚNICA
+                </span>
+            </div>
+            <h1 id="mainTitle" class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-300">
+                Deep Focus
+            </h1>
+            <p id="subTitle" class="text-slate-400 text-sm mt-2 font-light">4 horas de concentración pura</p>
+        </div>
+
+        <div class="py-6 text-center relative">
+            <div id="timerDisplay" class="text-7xl font-bold tracking-tighter text-white drop-shadow-2xl tabular-nums">
+                04:00:00
+            </div>
+            
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-purple-600/10 rounded-full blur-3xl -z-10 animate-pulse"></div>
+        </div>
+
+        <div class="px-8 mb-8">
+            <div class="h-1.5 w-full bg-slate-700 rounded-full overflow-hidden">
+                <div id="progressBar" class="h-full bg-gradient-to-r from-purple-500 to-pink-500 w-full transition-all duration-1000 ease-linear shadow-[0_0_10px_rgba(168,85,247,0.5)]"></div>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-4 px-8 mb-8">
+            <div class="flex justify-center items-center gap-4">
+                <button id="resetBtn" class="p-4 rounded-2xl bg-slate-700/50 hover:bg-slate-700 text-slate-300 transition-all hover:scale-105 active:scale-95 hidden" title="Reiniciar">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+
+                <button id="mainActionBtn" class="flex-1 py-4 px-6 rounded-2xl bg-white text-slate-900 font-bold text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)] transition-all hover:-translate-y-1 active:translate-y-0 flex items-center justify-center gap-2 group">
+                    <span id="btnIcon">▶</span> 
+                    <span id="btnText">INICIAR</span>
+                </button>
+            </div>
+            
+            <!-- Botón de prueba eliminado -->
+        </div>
+
+        <div class="bg-slate-900/50 backdrop-blur-md border-t border-white/5 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div id="audioVisualizer" class="flex gap-1 h-4 items-end">
+                        <div class="w-1 bg-purple-400 h-1 rounded-full transition-all duration-300"></div>
+                        <div class="w-1 bg-purple-400 h-1 rounded-full transition-all duration-300"></div>
+                        <div class="w-1 bg-purple-400 h-1 rounded-full transition-all duration-300"></div>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-xs font-bold text-purple-300 uppercase tracking-wider">Música de Fondo</span>
+                        <span class="text-sm font-medium text-slate-300">Lofi Beats</span>
+                    </div>
+                </div>
+                <span id="volLabel" class="text-xs font-mono text-slate-500">50%</span>
+            </div>
+            
+            <input type="range" id="volumeSlider" min="0" max="100" value="50" class="w-full">
+            <p class="text-[10px] text-slate-500 mt-2 text-center opacity-60">Volumen fluido y sin cortes</p>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURACIÓN CENTRAL
+        const CFG = {
+            workTime: 4 * 60 * 60,  // 4 horas
+            breakDuration: 10 * 60, // 10 minutos
+            breakCheckpoints: [3 * 3600, 2 * 3600, 1 * 3600] // Puntos donde salta el descanso (faltando 3h, 2h, 1h)
+        };
+
+        // ESTADO
+        let state = {
+            timeLeft: CFG.workTime,
+            active: false,
+            timer: null,
+            // Estado del descanso
+            onBreak: false,
+            breakTimeLeft: CFG.breakDuration,
+            breakTimer: null
+        };
+
+        // ELEMENTOS DOM
+        const ui = {
+            // Main UI
+            time: document.getElementById('timerDisplay'),
+            bar: document.getElementById('progressBar'),
+            btn: document.getElementById('mainActionBtn'),
+            btnText: document.getElementById('btnText'),
+            btnIcon: document.getElementById('btnIcon'),
+            reset: document.getElementById('resetBtn'),
+            title: document.getElementById('mainTitle'),
+            sub: document.getElementById('subTitle'),
+            badge: document.getElementById('sessionBadge'),
+            vol: document.getElementById('volumeSlider'),
+            volLabel: document.getElementById('volLabel'),
+            viz: document.getElementById('audioVisualizer').children,
+            audio: document.getElementById('bgMusic'),
+            
+            // Modal UI
+            modal: document.getElementById('breakModal'),
+            modalContent: document.getElementById('breakContent'),
+            breakTime: document.getElementById('breakTimerDisplay'),
+            skipBtn: document.getElementById('skipBreakBtn')
+        };
+
+        // INICIALIZAR AUDIO
+        ui.audio.volume = 0.5;
+
+        // --- FUNCIONES UTILITARIAS ---
+        
+        function format(s) {
+            const h = Math.floor(s / 3600).toString().padStart(2,'0');
+            const m = Math.floor((s % 3600) / 60).toString().padStart(2,'0');
+            const sec = (s % 60).toString().padStart(2,'0');
+            return `${h}:${m}:${sec}`;
+        }
+
+        function formatBreak(s) {
+            const m = Math.floor(s / 60).toString().padStart(2,'0');
+            const sec = (s % 60).toString().padStart(2,'0');
+            return `${m}:${sec}`;
+        }
+
+        function render() {
+            // Actualizar tiempo principal
+            ui.time.innerText = format(state.timeLeft);
+            
+            // Barra de progreso
+            const max = CFG.workTime;
+            const pct = (state.timeLeft / max) * 100;
+            ui.bar.style.width = `${pct}%`;
+
+            ui.badge.innerText = state.active 
+                ? "ENFOQUE ACTIVO"
+                : "SESIÓN ÚNICA";
+
+            // Visualizador falso
+            if (state.active) {
+                Array.from(ui.viz).forEach(el => el.classList.add('animate-pulse'));
+                ui.viz[0].style.height = '12px';
+                ui.viz[1].style.height = '16px';
+                ui.viz[2].style.height = '10px';
+            } else {
+                Array.from(ui.viz).forEach(el => el.classList.remove('animate-pulse'));
+                Array.from(ui.viz).forEach(el => el.style.height = '4px');
+            }
+        }
+
+        // --- LÓGICA PRINCIPAL ---
+
+        function toggleTimer() {
+            if (state.active) {
+                // PAUSAR MANUAL
+                clearInterval(state.timer);
+                state.active = false;
+                ui.btnText.innerText = "CONTINUAR";
+                ui.btnIcon.innerText = "▶";
+                ui.reset.classList.remove('hidden');
+                ui.audio.pause();
+            } else {
+                // INICIAR / REANUDAR
+                state.active = true;
+                ui.btnText.innerText = "PAUSAR";
+                ui.btnIcon.innerText = "⏸";
+                ui.reset.classList.add('hidden');
+                
+                // Reproducir
+                ui.audio.play().catch(e => console.log("Error de autoplay:", e));
+
+                state.timer = setInterval(() => {
+                    if (state.timeLeft > 0) {
+                        state.timeLeft--;
+                        
+                        // Check de descanso (cada hora exacta restante)
+                        if (CFG.breakCheckpoints.includes(state.timeLeft)) {
+                            startBreak();
+                        }
+                    } else {
+                        finishAll();
+                    }
+                    render();
+                }, 1000);
+            }
+            render();
+        }
+
+        // --- LÓGICA DE DESCANSO (MODAL) ---
+
+        function startBreak() {
+            // 1. Pausar flujo principal
+            clearInterval(state.timer);
+            state.active = false; // "Pausado" técnicamente mientras dura el descanso
+            ui.audio.pause();
+            
+            // 2. Preparar estado de descanso
+            state.onBreak = true;
+            state.breakTimeLeft = CFG.breakDuration;
+            
+            // 3. Mostrar Modal (Animación)
+            ui.modal.classList.remove('hidden');
+            // Timeout pequeño para permitir transición de opacidad
+            setTimeout(() => {
+                ui.modal.classList.remove('opacity-0');
+                ui.modalContent.classList.remove('scale-95');
+                ui.modalContent.classList.add('scale-100');
+            }, 10);
+            
+            playBeep(); // Aviso sonoro
+
+            // 4. Iniciar timer del descanso
+            updateBreakRender();
+            state.breakTimer = setInterval(() => {
+                if (state.breakTimeLeft > 0) {
+                    state.breakTimeLeft--;
+                    updateBreakRender();
+                } else {
+                    endBreak();
+                }
+            }, 1000);
+        }
+
+        function updateBreakRender() {
+            ui.breakTime.innerText = formatBreak(state.breakTimeLeft);
+        }
+
+        function endBreak() {
+            // 1. Limpiar timer de descanso
+            clearInterval(state.breakTimer);
+            state.onBreak = false;
+
+            // 2. Ocultar Modal
+            ui.modal.classList.add('opacity-0');
+            ui.modalContent.classList.remove('scale-100');
+            ui.modalContent.classList.add('scale-95');
+            
+            setTimeout(() => {
+                ui.modal.classList.add('hidden');
+                
+                // 3. Reanudar automáticamente el timer principal
+                // Solo si el tiempo principal no ha terminado
+                if (state.timeLeft > 0) {
+                    resumeFromBreak();
+                }
+            }, 300); // Esperar a que termine la transición CSS
+        }
+
+        function resumeFromBreak() {
+            playBeep(); // Aviso de vuelta al trabajo
+            state.active = true;
+            ui.btnText.innerText = "PAUSAR";
+            ui.btnIcon.innerText = "⏸";
+            ui.reset.classList.add('hidden');
+            
+            ui.audio.play().catch(e => console.log("Error resume audio:", e));
+
+            state.timer = setInterval(() => {
+                if (state.timeLeft > 0) {
+                    state.timeLeft--;
+                    // Check repetido por seguridad
+                    if (CFG.breakCheckpoints.includes(state.timeLeft)) {
+                        startBreak();
+                    }
+                } else {
+                    finishAll();
+                }
+                render();
+            }, 1000);
+        }
+
+        function finishAll() {
+            clearInterval(state.timer);
+            state.active = false;
+            
+            playBeep();
+
+            ui.title.innerText = "¡Completado!";
+            ui.sub.innerText = "Has terminado las 4 horas.";
+            ui.badge.innerText = "META ALCANZADA";
+            ui.btn.classList.add('hidden');
+            ui.reset.classList.remove('hidden');
+            ui.audio.pause();
+        }
+
+        function reset() {
+            clearInterval(state.timer);
+            clearInterval(state.breakTimer);
+            ui.audio.pause();
+            ui.audio.currentTime = 0;
+            
+            state = {
+                timeLeft: CFG.workTime,
+                active: false,
+                timer: null,
+                onBreak: false,
+                breakTimeLeft: CFG.breakDuration,
+                breakTimer: null
+            };
+            
+            ui.btn.classList.remove('hidden');
+            ui.reset.classList.add('hidden');
+            ui.btnText.innerText = "INICIAR";
+            ui.btnIcon.innerText = "▶";
+            
+            // Asegurar que modal esté cerrado
+            ui.modal.classList.add('hidden', 'opacity-0');
+            
+            render();
+        }
+
+        function playBeep() {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            // Sonido más agradable tipo campana
+            osc.frequency.setValueAtTime(600, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.5);
+            gain.gain.setValueAtTime(0.5, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.5);
+        }
+
+        // --- LISTENERS ---
+        ui.vol.oninput = (e) => {
+            const val = e.target.value;
+            ui.volLabel.innerText = val + "%";
+            ui.audio.volume = val / 100;
+        };
+
+        ui.btn.onclick = toggleTimer;
+        ui.reset.onclick = reset;
+        ui.skipBtn.onclick = endBreak;
+
+        // Render inicial
+        render();
+    </script>
+</body>
+</html>
